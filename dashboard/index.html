@@ -1,23 +1,210 @@
-#!/usr/bin/env bash
-set -e
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pi 5 Rack Control Center</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #121a2d;
+        --panel2: #1a2640;
+        --accent: #5cc8ff;
+        --accent2: #7ef0c1;
+        --text: #edf6ff;
+        --muted: #a8b7d1;
+        --danger: #ff7a7a;
+        --shadow: rgba(0, 0, 0, 0.25);
+      }
 
-echo "Updating system..."
-sudo apt-get update
-sudo apt-get upgrade -y
+      * { box-sizing: border-box; }
 
-echo "Installing Docker dependencies..."
-sudo apt-get install -y ca-certificates curl gnupg lsb-release
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(180deg, #081120 0%, #0d162b 100%);
+        color: var(--text);
+      }
 
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px 60px;
+      }
 
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
 
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      .title {
+        font-size: clamp(2rem, 4vw, 3rem);
+        margin: 0;
+        font-weight: 700;
+      }
 
-sudo usermod -aG docker $USER
+      .subtitle {
+        color: var(--muted);
+        margin-top: 8px;
+      }
 
-echo "Docker installation complete. Log out and back in before using docker compose."
+      .status-pill {
+        background: rgba(126, 240, 193, 0.12);
+        border: 1px solid rgba(126, 240, 193, 0.5);
+        color: var(--accent2);
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 600;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(18,26,45,0.96), rgba(23,34,55,0.94));
+        border: 1px solid rgba(140, 170, 220, 0.18);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 24px var(--shadow);
+      }
+
+      .card h3 {
+        margin: 0 0 10px;
+        font-size: 1.15rem;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .links {
+        list-style: none;
+        padding: 0;
+        margin: 20px 0 0;
+      }
+
+      .links li {
+        margin: 10px 0;
+      }
+
+      .links a {
+        display: inline-block;
+        color: var(--text);
+        text-decoration: none;
+        background: rgba(92, 200, 255, 0.08);
+        border: 1px solid rgba(92, 200, 255, 0.25);
+        border-radius: 10px;
+        padding: 10px 12px;
+        width: 100%;
+        transition: 0.2s ease;
+      }
+
+      .links a:hover {
+        background: rgba(92, 200, 255, 0.18);
+        transform: translateY(-1px);
+      }
+
+      .stats {
+        margin-top: 28px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 16px;
+      }
+
+      .stat {
+        background: linear-gradient(180deg, #16233c, #111b2d);
+        border: 1px solid rgba(126, 240, 193, 0.2);
+        border-radius: 14px;
+        padding: 18px;
+      }
+
+      .stat .label {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+      }
+
+      .stat .value {
+        font-size: 1.8rem;
+        font-weight: 700;
+      }
+
+      @media (max-width: 640px) {
+        .container {
+          padding-top: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div>
+          <h1 class="title">Pi 5 Rack Control Center</h1>
+          <div class="subtitle">Self-hosted monitoring, automation, and infrastructure management</div>
+        </div>
+        <div class="status-pill">Rack Online</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="label">Services</span>
+          <span class="value">10</span>
+        </div>
+        <div class="stat">
+          <span class="label">Monitoring</span>
+          <span class="value">Live</span>
+        </div>
+        <div class="stat">
+          <span class="label">Automation</span>
+          <span class="value">ON</span>
+        </div>
+        <div class="stat">
+          <span class="label">Remote Access</span>
+          <span class="value">Tailscale</span>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top: 28px;">
+        <div class="card">
+          <h3>Core Services</h3>
+          <p>Operations, management, and overall rack control.</p>
+          <ul class="links">
+            <li><a href="http://localhost:9000" target="_blank">Portainer</a></li>
+            <li><a href="http://localhost:8080" target="_blank">Traefik Dashboard</a></li>
+            <li><a href="http://localhost:8123" target="_blank">Home Assistant</a></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Monitoring</h3>
+          <p>Metrics, uptime checks, and service health.</p>
+          <ul class="links">
+            <li><a href="http://localhost:3001" target="_blank">Uptime Kuma</a></li>
+            <li><a href="http://localhost:3002" target="_blank">Grafana</a></li>
+            <li><a href="http://localhost:9090" target="_blank">Prometheus</a></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Networking</h3>
+          <p>DNS filtering, inventory, and local infrastructure visibility.</p>
+          <ul class="links">
+            <li><a href="http://localhost:3000" target="_blank">AdGuard Home</a></li>
+            <li><a href="http://localhost:8000" target="_blank">NetBox</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
