@@ -1,0 +1,33 @@
+# AI Stack Configuration
+TZ=America/New_York
+
+# PostgreSQL
+POSTGRES_DB=aihub
+POSTGRES_USER=aiuser
+POSTGRES_PASSWORD=change-this-password
+
+# Redis
+REDIS_PASSWORD=change-this-password
+
+# MinIO
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=change-this-password
+MINIO_BUCKET=ai-storage
+
+# Ollama
+OLLAMA_HOST=0.0.0.0
+OLLAMA_PORT=11434
+
+# Open WebUI
+OPEN_WEBUI_PORT=3000
+OPEN_WEBUI_SECRET_KEY=change-this-secret-key
+
+# FileBrowser
+FILEBROWSER_PORT=8081
+
+# Local backup retention
+BACKUP_RETENTION_DAYS=30
+
+# Tailscale is optional for secure remote access
+TAILSCALE_AUTHKEY=
+TAILSCALE_HOSTNAME=pi5-ai-rack
