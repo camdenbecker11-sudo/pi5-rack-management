@@ -1,6 +1,38 @@
 # Pi 5 AI Stack - Complete Setup Tutorial
 
-This guide walks you through setting up a complete **local AI environment** on your Raspberry Pi 5 with chat backup, file storage, and remote access via Tailscale.
+This guide walks you through setting up a complete local AI environment on your Raspberry Pi 5 with chat backup, file storage, and optional remote access via Tailscale.
+
+## Quick start commands you can copy/paste
+
+```bash
+# 1) Install Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+
+# 2) Log out and back in, then clone the repo
+cd ~
+git clone https://github.com/camdenbecker11-sudo/pi5-rack-management.git
+cd pi5-rack-management
+
+# 3) Copy the example environment file
+cp .env.ai.example .env
+
+# 4) Edit the environment file
+nano .env
+
+# 5) Create data folders
+mkdir -p data/{postgres-ai,redis,minio,open-webui,filebrowser,ollama,tailscale}
+chmod -R 777 data/
+
+# 6) Start the stack
+docker compose -f docker-compose.ai.yml up -d
+
+# 7) Check status
+docker compose -f docker-compose.ai.yml ps
+
+# 8) View logs if needed
+docker compose -f docker-compose.ai.yml logs -f
+```
 
 ## Prerequisites
 
@@ -31,6 +63,7 @@ docker compose version
 ## Step 1: Clone the Repository
 
 ```bash
+cd ~
 git clone https://github.com/camdenbecker11-sudo/pi5-rack-management.git
 cd pi5-rack-management
 ```
@@ -66,8 +99,9 @@ TAILSCALE_AUTHKEY=tskey-xxxxxxxxxxxxx
 ```
 
 **Tips for strong passwords:**
+
 ```bash
-openssl rand -base64 32  # Generate a random password
+openssl rand -base64 32
 ```
 
 ## Step 3: Create Data Directories
@@ -102,6 +136,7 @@ docker compose -f docker-compose.ai.yml ps
 ```
 
 You should see:
+
 - ai-postgres (healthy)
 - ai-redis (healthy)
 - ai-minio (healthy)
@@ -169,7 +204,7 @@ Available models: https://ollama.ai/library
 3. Upload files, PDFs, screenshots, notes
 4. Create folders for organization
 
-This is your **AI memory vault** where old files live for later retrieval.
+This is your AI memory vault where old files live for later retrieval.
 
 ## Step 10: Configure MinIO (Optional)
 
@@ -232,25 +267,25 @@ crontab -l
 
 ### Daily use:
 
-1. **Chat**: Open WebUI for conversations with your local AI
-2. **Store**: Save PDFs, notes, screenshots to FileBrowser
-3. **Retrieve**: Ask the AI to search or recall older files/chats
-4. **Back up**: Automated nightly backup of all data
+1. Chat: Open WebUI for conversations with your local AI
+2. Store: Save PDFs, notes, screenshots to FileBrowser
+3. Retrieve: Ask the AI to search or recall older files/chats
+4. Back up: Automated nightly backup of all data
 
 ### Access patterns:
 
-- **Local (home)**: http://pi-ip:3000
-- **Remote**: Tailscale IP or device name
-- **FileBrowser**: Same pattern, port 8081
-- **MinIO**: Same pattern, port 9001
+- Local (home): http://pi-ip:3000
+- Remote: Tailscale IP or device name
+- FileBrowser: Same pattern, port 8081
+- MinIO: Same pattern, port 9001
 
 ## Useful Commands
 
 ### View logs:
 
 ```bash
-docker compose -f docker-compose.ai.yml logs -f open-webui  # Chat logs
-docker compose -f docker-compose.ai.yml logs -f ollama      # Model logs
+docker compose -f docker-compose.ai.yml logs -f open-webui
+docker compose -f docker-compose.ai.yml logs -f ollama
 ```
 
 ### Restart a service:
@@ -284,6 +319,13 @@ docker compose -f docker-compose.ai.yml pull
 docker compose -f docker-compose.ai.yml up -d
 ```
 
+### Remove a bad model or clean cache:
+
+```bash
+docker exec ai-ollama ollama rm mistral
+rm -rf ./data/ollama
+```
+
 ## Troubleshooting
 
 ### Port already in use:
@@ -307,7 +349,7 @@ df -h
 Delete old backups if needed:
 
 ```bash
-rm -rf backups/ai-backup-*.tar.gz  # Delete manually or set retention
+rm -rf backups/ai-backup-*.tar.gz
 ```
 
 ### High CPU/memory:
@@ -322,10 +364,15 @@ Ollama uses a lot of memory when models are loaded. If you run out of RAM, consi
 
 ### Can't access from remote:
 
-1. Check Tailscale is running: `docker compose -f docker-compose.ai.yml logs tailscale`
-2. Verify authkey is correct in `.env`
-3. Restart Tailscale: `docker compose -f docker-compose.ai.yml restart tailscale`
-4. Check on Tailscale admin panel that the device is connected
+```bash
+docker compose -f docker-compose.ai.yml logs tailscale
+```
+
+Then:
+
+```bash
+docker compose -f docker-compose.ai.yml restart tailscale
+```
 
 ### Models won't download:
 
@@ -340,11 +387,11 @@ ping 8.8.8.8
 
 Once everything is running smoothly:
 
-1. **Add more models** for different tasks
-2. **Create a RAG pipeline** - embed old documents in pgvector for semantic search
-3. **Set up alerts** - get notified when services go down
-4. **Add integrations** - connect the API to other tools
-5. **Export chats** - save important conversations for archival
+1. Add more models for different tasks
+2. Create a RAG pipeline by embedding old documents into pgvector
+3. Set up alerts for service failures
+4. Add integrations to other tools
+5. Export chats and save important conversations for archival
 
 ## Additional Resources
 
@@ -358,11 +405,18 @@ Once everything is running smoothly:
 
 If something breaks:
 
-1. Check logs: `docker compose -f docker-compose.ai.yml logs`
-2. Restart services: `docker compose -f docker-compose.ai.yml restart`
-3. Nuclear option (deletes all data): `docker compose -f docker-compose.ai.yml down -v`
-4. Then start fresh: `docker compose -f docker-compose.ai.yml up -d`
+```bash
+docker compose -f docker-compose.ai.yml logs
+docker compose -f docker-compose.ai.yml restart
+docker compose -f docker-compose.ai.yml down -v
+```
+
+Then start fresh:
+
+```bash
+docker compose -f docker-compose.ai.yml up -d
+```
 
 ---
 
-**You now have a fully functional local AI environment with chat backup, file storage, and the ability to access it remotely via Tailscale. Enjoy!**
+You now have a fully functional local AI environment with chat backup, file storage, and optional remote access via Tailscale.
