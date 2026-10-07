@@ -1,33 +1,134 @@
-# AI Stack Configuration
-TZ=America/New_York
+version: "3.9"
 
-# PostgreSQL
-POSTGRES_DB=aihub
-POSTGRES_USER=aiuser
-POSTGRES_PASSWORD=change-this-password
+services:
+  postgres:
+    image: pgvector/pgvector:pg16-latest
+    container_name: ai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres-ai:/var/lib/postgresql/data
+    networks:
+      - ai-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-# Redis
-REDIS_PASSWORD=change-this-password
+  redis:
+    image: redis:7-alpine
+    container_name: ai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - ai-net
+    command: redis-server --appendonly yes
 
-# MinIO
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=change-this-password
-MINIO_BUCKET=ai-storage
+  minio:
+    image: minio/minio:latest
+    container_name: ai-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./data/minio:/data
+    networks:
+      - ai-net
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
-# Ollama
-OLLAMA_HOST=0.0.0.0
-OLLAMA_PORT=11434
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+    networks:
+      - ai-net
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    # Uncomment to use GPU if available
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
-# Open WebUI
-OPEN_WEBUI_PORT=3000
-OPEN_WEBUI_SECRET_KEY=change-this-secret-key
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ai-open-webui
+    restart: unless-stopped
+    ports:
+      - "${OPEN_WEBUI_PORT:-3000}:8080"
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      OPENAI_API_KEY: sk-
+      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY}
+    volumes:
+      - ./data/open-webui:/app/backend/data
+    networks:
+      - ai-net
+    depends_on:
+      - ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-# FileBrowser
-FILEBROWSER_PORT=8081
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: ai-filebrowser
+    restart: unless-stopped
+    ports:
+      - "${FILEBROWSER_PORT:-8081}:80"
+    volumes:
+      - ./data/filebrowser:/srv
+      - ./data/filebrowser/database.db:/database.db
+    networks:
+      - ai-net
+    environment:
+      - FB_ROOT=/srv
+    user: "1000:1000"
 
-# Local backup retention
-BACKUP_RETENTION_DAYS=30
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: ai-tailscale
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      - TS_AUTHKEY=${TAILSCALE_AUTHKEY}
+      - TS_HOSTNAME=${TAILSCALE_HOSTNAME}
+      - TS_USERSPACE=false
+    volumes:
+      - ./data/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
 
-# Tailscale is optional for secure remote access
-TAILSCALE_AUTHKEY=
-TAILSCALE_HOSTNAME=pi5-ai-rack
+networks:
+  ai-net:
+    driver: bridge
