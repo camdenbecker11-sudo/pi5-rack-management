@@ -1,23 +1,11 @@
-api:
-  dashboard: true
-  insecure: true
+global:
+  scrape_interval: 15s
 
-providers:
-  docker:
-    exposedByDefault: false
-  file:
-    filename: /etc/traefik/dynamic.yml
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
 
-entryPoints:
-  web:
-    address: ":80"
-  websecure:
-    address: ":443"
-
-certificatesResolvers:
-  le:
-    acme:
-      email: "you@example.com"
-      storage: "/letsencrypt/acme.json"
-      httpChallenge:
-        entryPoint: web
+  - job_name: "node"
+    static_configs:
+      - targets: ["localhost:9100"]
