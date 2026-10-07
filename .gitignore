@@ -1,0 +1,37 @@
+# Pi 5 Rack Management Stack
+
+This project is intended as a starter stack for a Raspberry Pi 5 lab or small rack setup.
+
+## Included services
+- Portainer
+- Traefik
+- Home Assistant
+- Uptime Kuma
+- AdGuard Home
+- Prometheus
+- Grafana
+- NetBox
+- Tailscale
+
+## Files
+- docker-compose.yml
+- prometheus.yml
+- traefik/traefik.yml
+- traefik/dynamic.yml
+- scripts/setup-pi.sh
+
+## Environment
+- Copy `.env.example` to `.env`
+- Customize the values before running Docker Compose.
+
+## Start everything
+
+```bash
+docker compose up -d
+```
+
+## Stop everything
+
+```bash
+docker compose down
+```
